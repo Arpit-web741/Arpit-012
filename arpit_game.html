@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arpit's Catch Challenge!</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: linear-gradient(135deg, #111827, #1f2937);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            color: #fff;
+        }
+
+        h2 {
+            margin-bottom: 5px;
+            color: #6366f1;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 18px;
+        }
+
+        #ui-panel {
+            margin-bottom: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            display: flex;
+            gap: 30px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 10px 25px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        #game-container {
+            width: 400px;
+            height: 500px;
+            background: linear-gradient(to bottom, #1f2937, #111827);
+            position: relative;
+            overflow: hidden;
+            border: 4px solid #6366f1;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+        }
+
+        #basket {
+            width: 80px;
+            height: 20px;
+            background: #6366f1;
+            position: absolute;
+            bottom: 10px;
+            left: 160px;
+            border-radius: 5px;
+            box-shadow: 0 0 15px #6366f1;
+            transition: background 0.1s;
+        }
+
+        .item {
+            width: 25px;
+            height: 25px;
+            background: #f59e0b;
+            position: absolute;
+            top: -30px;
+            border-radius: 50%;
+            box-shadow: 0 0 10px #f59e0b;
+        }
+
+        #game-over-screen {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(17, 24, 39, 0.95);
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            text-align: center;
+            z-index: 10;
+        }
+
+        #game-over-screen h1 {
+            color: #ef4444;
+            font-size: 36px;
+            margin-bottom: 5px;
+        }
+
+        #game-over-screen h3 {
+            color: #9ca3af;
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        #game-over-screen p {
+            font-size: 22px;
+            margin-bottom: 25px;
+        }
+
+        #restart-btn {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 35px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.4);
+            transition: transform 0.2s, background 0.2s;
+        }
+
+        #restart-btn:hover {
+            background: #059669;
+            transform: scale(1.05);
+        }
+
+        .controls-hint {
+            margin-top: 15px;
+            font-size: 14px;
+            color: #9ca3af;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Arpit's Arcade</h2>
+    <div id="ui-panel">
+        <div>Score: <span id="score">0</span></div>
+        <div>Lives: <span id="lives">3</span></div>
+    </div>
+
+    <div id="game-container">
+        <div id="basket"></div>
+        
+        <div id="game-over-screen">
+            <h1>GAME OVER</h1>
+            <h3>Thanks for playing, Arpit!</h3>
+            <p>Final Score: <span id="final-score">0</span></p>
+            <button id="restart-btn" onclick="resetGame()">Try Again</button>
+        </div>
+    </div>
+
+    <p class="controls-hint">Use <b>Left/Right Arrows</b> or move your <b>Mouse</b> to catch items.</p>
+
+    <script>
+        const container = document.getElementById('game-container');
+        const basket = document.getElementById('basket');
+        const scoreDisplay = document.getElementById('score');
+        const livesDisplay = document.getElementById('lives');
+        const gameOverScreen = document.getElementById('game-over-screen');
+        const finalScoreDisplay = document.getElementById('final-score');
+
+        let score = 0;
+        let lives = 3;
+        let gameActive = true;
+        let basketX = 160;
+        const basketWidth = 80;
+        const containerWidth = 400;
+
+        let item = { x: 0, y: -30, speed: 4 };
+
+        document.addEventListener('keydown', (e) => {
+            if (!gameActive) return;
+            if (e.key === 'ArrowLeft') {
+                basketX = Math.max(0, basketX - 25);
+            } else if (e.key === 'ArrowRight') {
+                basketX = Math.min(containerWidth - basketWidth, basketX + 25);
+            }
+            basket.style.left = basketX + 'px';
+        });
+
+        container.addEventListener('mousemove', (e) => {
+            if (!gameActive) return;
+            const rect = container.getBoundingClientRect();
+            let relativeX = e.clientX - rect.left;
+            basketX = relativeX - (basketWidth / 2);
+            basketX = Math.max(0, Math.min(containerWidth - basketWidth, basketX));
+            basket.style.left = basketX + 'px';
+        });
+
+        const itemElement = document.createElement('div');
+        itemElement.classList.add('item');
+        container.appendChild(itemElement);
+
+        function spawnItem() {
+            item.x = Math.floor(Math.random() * (containerWidth - 25));
+            item.y = -30;
+            item.speed = 4 + Math.floor(score / 5); 
+            itemElement.style.left = item.x + 'px';
+        }
+
+        function update() {
+            if (!gameActive) return;
+
+            item.y += item.speed;
+            itemElement.style.top = item.y + 'px';
+
+            if (item.y > 500) {
+                lives--;
+                livesDisplay.textContent = lives;
+                if (lives <= 0) {
+                    endGame();
+                } else {
+                    spawnItem();
+                }
+            }
+
+            if (item.y >= 460 && item.y <= 480) {
+                if (item.x + 25 >= basketX && item.x <= basketX + basketWidth) {
+                    score++;
+                    scoreDisplay.textContent = score;
+                    basket.style.background = '#10b981';
+                    setTimeout(() => basket.style.background = '#6366f1', 100);
+                    spawnItem();
+                }
+            }
+
+            requestAnimationFrame(update);
+        }
+
+        function endGame() {
+            gameActive = false;
+            gameOverScreen.style.display = 'flex';
+            finalScoreDisplay.textContent = score;
+        }
+
+        function resetGame() {
+            score = 0;
+            lives = 3;
+            gameActive = true;
+            scoreDisplay.textContent = score;
+            livesDisplay.textContent = lives;
+            gameOverScreen.style.display = 'none';
+            basketX = 160;
+            basket.style.left = basketX + 'px';
+            spawnItem();
+            update();
+        }
+
+        spawnItem();
+        update();
+    </script>
+</body>
+</html>
